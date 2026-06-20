@@ -1,0 +1,15 @@
+Withdrawal Request Received
+
+Hi {firstname} {lastname},
+
+We have received your withdrawal request for order #{order_reference}.
+
+Request Details:
+Date/Time: {date}
+IP Address: {ip_address}
+User Agent: {user_agent}
+
+Please find the attached receipt for your request.
+
+Regards,
+{shop_name}

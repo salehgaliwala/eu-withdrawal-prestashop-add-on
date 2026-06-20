@@ -1,0 +1,154 @@
+<?php
+if (!defined("_PS_VERSION_")) { exit; }
+/**
+ * 2024 PrestaShop
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@prestashop.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+ * versions in the future. If you wish to customize PrestaShop for your
+ * needs please refer to http://www.prestashop.com for more information.
+ *
+ *  @author    PrestaShop SA <contact@prestashop.com>
+ *  @copyright 2024 PrestaShop SA
+ *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ *  International Registered Trademark & Property of PrestaShop SA
+ */
+
+include_once(_PS_MODULE_DIR_ . 'euwithdrawalbutton/classes/EuWithdrawalRequest.php');
+
+class AdminEuWithdrawalRequestsController extends ModuleAdminController
+{
+    public function __construct()
+    {
+        $this->bootstrap = true;
+        $this->table = 'euwithdrawal_requests';
+        $this->identifier = 'id_euwithdrawal_request';
+        $this->className = 'EuWithdrawalRequest';
+        $this->lang = false;
+        $this->explicitSelect = true;
+        $this->allow_export = true;
+
+        parent::__construct();
+
+        $this->_select = 'o.reference as order_reference, CONCAT(c.firstname, " ", c.lastname) as customer_name';
+        $this->_join = 'LEFT JOIN `' . _DB_PREFIX_ . 'orders` o ON (o.`id_order` = a.`id_order`)
+                        LEFT JOIN `' . _DB_PREFIX_ . 'customer` c ON (c.`id_customer` = a.`id_customer`)';
+
+        $this->fields_list = array(
+            'id_euwithdrawal_request' => array(
+                'title' => $this->l('ID'),
+                'align' => 'center',
+                'width' => 25
+            ),
+            'order_reference' => array(
+                'title' => $this->l('Order Reference'),
+                'width' => 100,
+                'filter_key' => 'o!reference'
+            ),
+            'customer_name' => array(
+                'title' => $this->l('Customer'),
+                'width' => 150,
+                'filter_key' => 'customer_name',
+                'havingFilter' => true,
+            ),
+            'date_add' => array(
+                'title' => $this->l('Date'),
+                'type' => 'datetime',
+                'width' => 150
+            ),
+            'ip_address' => array(
+                'title' => $this->l('IP Address'),
+                'width' => 100
+            )
+        );
+
+        $this->addRowAction('view');
+        $this->addRowAction('exportpdf');
+    }
+
+    public function renderView()
+    {
+        $id = (int)Tools::getValue($this->identifier);
+        $request = new EuWithdrawalRequest($id);
+
+        if (!Validate::isLoadedObject($request)) {
+            return parent::renderView();
+        }
+
+        $order = new Order((int)$request->id_order);
+        $customer = new Customer((int)$request->id_customer);
+        $items = json_decode($request->items_data, true);
+
+        $this->tpl_view_vars = array(
+            'request' => $request,
+            'order' => $order,
+            'customer' => $customer,
+            'items' => $items,
+        );
+
+        return parent::renderView();
+    }
+
+    public function displayExportpdfLink($token = null, $id = null, $name = null)
+    {
+        $this->context->smarty->assign(array(
+            'href' => self::$currentIndex . '&' . $this->identifier . '=' . $id . '&exportpdf' . $this->table . '&token=' . ($token ?: $this->token),
+            'action' => $this->l('Export PDF'),
+        ));
+
+        return $this->context->smarty->fetch('helpers/list/list_action_default.tpl');
+    }
+
+    public function postProcess()
+    {
+        if (Tools::isSubmit('exportpdf' . $this->table)) {
+            $this->processExportPdf();
+        }
+        parent::postProcess();
+    }
+
+    public function processExportPdf()
+    {
+        $id = (int)Tools::getValue($this->identifier);
+        $request = new EuWithdrawalRequest($id);
+
+        if (!Validate::isLoadedObject($request)) {
+            die('Request not found');
+        }
+
+        $order = new Order((int)$request->id_order);
+        $items = json_decode($request->items_data, true);
+
+        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf->SetCreator(PDF_CREATOR);
+        $pdf->SetTitle('Withdrawal Receipt - ' . $order->reference);
+        $pdf->AddPage();
+
+        $html = '<h1>Withdrawal Request Receipt</h1>';
+        $html .= '<p><strong>Order Reference:</strong> ' . $order->reference . '</p>';
+        $html .= '<p><strong>Date/Time:</strong> ' . $request->date_add . '</p>';
+        $html .= '<p><strong>IP Address:</strong> ' . $request->ip_address . '</p>';
+        $html .= '<p><strong>User Agent:</strong> ' . $request->user_agent . '</p>';
+        $html .= '<h2>Items Selected for Withdrawal:</h2>';
+        $html .= '<table border="1" cellpadding="5"><thead><tr><th>Product Name</th><th>Quantity</th></tr></thead><tbody>';
+        foreach ($items as $item) {
+            $html .= '<tr><td>' . $item['product_name'] . '</td><td>' . $item['quantity'] . '</td></tr>';
+        }
+        $html .= '</tbody></table>';
+
+        $pdf->writeHTML($html, true, false, true, false, '');
+        $pdf->Output('withdrawal_receipt_' . $order->reference . '.pdf', 'D');
+        exit;
+    }
+}
