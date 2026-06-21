@@ -1,0 +1,15 @@
+New Withdrawal Request
+
+A new withdrawal request has been submitted.
+
+Customer Name: {customer_name}
+Order Reference: {order_reference}
+Email: {email}
+Request Type: {request_type}
+Date: {date}
+IP Address: {ip_address}
+
+Items:
+{items}
+
+View this in the Back Office under Orders > Withdrawal Requests.
