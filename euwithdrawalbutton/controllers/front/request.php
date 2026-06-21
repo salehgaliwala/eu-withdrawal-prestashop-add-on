@@ -37,75 +37,19 @@ class EuWithdrawalButtonRequestModuleFrontController extends ModuleFrontControll
         parent::initContent();
 
         $id_order = (int)Tools::getValue('id_order');
-
+        $order_reference = '';
         if ($id_order) {
-            $this->displayWithdrawalForm($id_order);
-        } else {
-            $this->displayLookupForm();
-        }
-    }
-
-    protected function displayLookupForm()
-    {
-        $this->context->smarty->assign([
-            'lookup_action' => $this->context->link->getModuleLink('euwithdrawalbutton', 'request'),
-        ]);
-        $this->setTemplate('module:euwithdrawalbutton/views/templates/front/request.tpl');
-    }
-
-    protected function displayWithdrawalForm($id_order)
-    {
-        $order = new Order($id_order);
-
-        if (!Validate::isLoadedObject($order)) {
-            $this->errors[] = $this->module->l('Order not found.');
-            return $this->displayLookupForm();
-        }
-
-        // Security check
-        if ($this->context->customer->id) {
-            if ($this->context->customer->id != $order->id_customer) {
-                Tools::redirect('index.php?controller=history');
-            }
-        } else {
-            $secure_key = Tools::getValue('secure_key');
-            if ($secure_key != $order->secure_key) {
-                $this->errors[] = $this->module->l('Invalid access for this order.');
-                return $this->displayLookupForm();
-            }
-        }
-
-        $products = $order->getProducts();
-        $product_ids = array_map(function($p) { return (int)$p['product_id']; }, $products);
-
-        // Single query to avoid N+1
-        $virtual_statuses = array();
-        if (!empty($product_ids)) {
-            $results = Db::getInstance()->executeS('SELECT id_product, is_virtual FROM ' . _DB_PREFIX_ . 'product WHERE id_product IN (' . implode(',', array_unique($product_ids)) . ')');
-            foreach ($results as $row) {
-                $virtual_statuses[$row['id_product']] = (bool)$row['is_virtual'];
-            }
-        }
-
-        $eligible_products = array();
-        foreach ($products as $product) {
-            $is_virtual = isset($virtual_statuses[$product['product_id']]) ? $virtual_statuses[$product['product_id']] : false;
-            $has_customization = (int)$product['customization_quantity'] > 0;
-
-            if (!$is_virtual && !$has_customization) {
-                $eligible_products[] = $product;
+            $order = new Order($id_order);
+            if (Validate::isLoadedObject($order)) {
+                $order_reference = $order->reference;
             }
         }
 
         $this->context->smarty->assign([
-            'order' => $order,
-            'products' => $eligible_products,
-            'id_order' => $id_order,
-            'secure_key' => $order->secure_key,
-            'action_url' => $this->context->link->getModuleLink('euwithdrawalbutton', 'request', [
-                'id_order' => $id_order,
-                'secure_key' => $order->secure_key
-            ]),
+            'action_url' => $this->context->link->getModuleLink('euwithdrawalbutton', 'request'),
+            'customer_name' => $this->context->customer->id ? $this->context->customer->firstname . ' ' . $this->context->customer->lastname : '',
+            'email' => $this->context->customer->id ? $this->context->customer->email : '',
+            'order_reference' => $order_reference,
         ]);
 
         $this->setTemplate('module:euwithdrawalbutton/views/templates/front/request.tpl');
@@ -113,186 +57,134 @@ class EuWithdrawalButtonRequestModuleFrontController extends ModuleFrontControll
 
     public function postProcess()
     {
-        if (Tools::isSubmit('submitLookup')) {
-            $this->processLookup();
-        } elseif (Tools::isSubmit('submitWithdrawal')) {
-            $this->processWithdrawal();
-        }
-    }
+        if (Tools::isSubmit('submitWithdrawal')) {
+            $customer_name = Tools::getValue('customer_name');
+            $order_reference = Tools::getValue('order_reference');
+            $email = Tools::getValue('email');
+            $request_type = Tools::getValue('request_type');
 
-    protected function processLookup()
-    {
-        $reference = Tools::getValue('order_reference');
-        $email = Tools::getValue('email');
+            if (empty($customer_name) || empty($order_reference) || empty($email) || !Validate::isEmail($email)) {
+                $this->errors[] = $this->module->l('Please fill all required fields correctly.');
+                return;
+            }
 
-        if (empty($reference) || empty($email) || !Validate::isEmail($email)) {
-            $this->errors[] = $this->module->l('Please provide a valid order reference and email.');
-            return;
-        }
-
-        $id_order = (int)Db::getInstance()->getValue('
-            SELECT o.id_order
-            FROM ' . _DB_PREFIX_ . 'orders o
-            LEFT JOIN ' . _DB_PREFIX_ . 'customer c ON o.id_customer = c.id_customer
-            WHERE o.reference = "' . pSQL($reference) . '" AND c.email = "' . pSQL($email) . '"'
-        );
-
-        if ($id_order) {
+            $id_order = (int)Db::getInstance()->getValue('SELECT id_order FROM ' . _DB_PREFIX_ . 'orders WHERE reference = "' . pSQL($order_reference) . '"');
             $order = new Order($id_order);
-            Tools::redirect($this->context->link->getModuleLink('euwithdrawalbutton', 'request', [
-                'id_order' => $id_order,
-                'secure_key' => $order->secure_key
-            ]));
-        } else {
-            $this->errors[] = $this->module->l('Order not found with these credentials.');
+
+            $withdrawal_data = array();
+            if ($request_type === 'line_items') {
+                $item_names = Tools::getValue('item_name');
+                $item_numbers = Tools::getValue('item_number');
+                $item_quantities = Tools::getValue('item_quantity');
+
+                if (!empty($item_names) && is_array($item_names)) {
+                    foreach ($item_names as $key => $name) {
+                        if (empty($name)) continue;
+                        $withdrawal_data[] = array(
+                            'product_name' => $name,
+                            'product_number' => $item_numbers[$key],
+                            'quantity' => (int)$item_quantities[$key]
+                        );
+                    }
+                }
+
+                if (empty($withdrawal_data)) {
+                    $this->errors[] = $this->module->l('Please provide at least one item detail for partial withdrawal.');
+                    return;
+                }
+            } else {
+                $withdrawal_data = array('type' => 'entire_order');
+            }
+
+            include_once(_PS_MODULE_DIR_ . 'euwithdrawalbutton/classes/EuWithdrawalRequest.php');
+            $request = new EuWithdrawalRequest();
+            $request->id_order = $id_order;
+            $request->id_customer = (int)$order->id_customer;
+            $request->customer_name = $customer_name;
+            $request->order_reference = $order_reference;
+            $request->email = $email;
+            $request->request_type = $request_type;
+            $request->items_data = json_encode($withdrawal_data);
+            $request->ip_address = Tools::getRemoteAddr();
+            $request->user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+            $request->date_add = date('Y-m-d H:i:s');
+
+            if ($request->add()) {
+                if (Validate::isLoadedObject($order)) {
+                    $new_state_id = (int)Configuration::get('EU_WITHDRAWAL_STATE_ID');
+                    if ($new_state_id) {
+                        $history = new OrderHistory();
+                        $history->id_order = (int)$order->id;
+                        $history->changeIdOrderState($new_state_id, (int)$order->id);
+                        $history->addWithemail(true);
+                    }
+                }
+
+                $this->sendNotifications($request);
+                $this->success[] = $this->module->l('Your withdrawal request has been submitted successfully.');
+            } else {
+                $this->errors[] = $this->module->l('An error occurred while saving your request.');
+            }
         }
     }
 
-    protected function processWithdrawal()
+    protected function sendNotifications($request)
     {
-        $id_order = (int)Tools::getValue('id_order');
-        $order = new Order($id_order);
-
-        if (!Validate::isLoadedObject($order)) {
-             $this->errors[] = $this->module->l('Invalid order.');
-             return;
-        }
-
-        if ($this->context->customer->id) {
-            if ($this->context->customer->id != $order->id_customer) {
-                $this->errors[] = $this->module->l('Invalid order.');
-                return;
-            }
-        } else {
-            $secure_key = Tools::getValue('secure_key');
-            if ($secure_key != $order->secure_key) {
-                $this->errors[] = $this->module->l('Invalid order.');
-                return;
-            }
-        }
-
-        $selected_items = Tools::getValue('selected_items');
-        $quantities = Tools::getValue('quantity');
-
-        if (empty($selected_items) || !is_array($selected_items)) {
-            $this->errors[] = $this->module->l('Please select at least one item to return.');
-            return;
-        }
-
-        // Re-verify eligibility on server side
-        $products = $order->getProducts();
-        $product_ids = array_map(function($p) { return (int)$p['product_id']; }, $products);
-        $virtual_statuses = array();
-        if (!empty($product_ids)) {
-            $results = Db::getInstance()->executeS('SELECT id_product, is_virtual FROM ' . _DB_PREFIX_ . 'product WHERE id_product IN (' . implode(',', array_unique($product_ids)) . ')');
-            foreach ($results as $row) {
-                $virtual_statuses[$row['id_product']] = (bool)$row['is_virtual'];
-            }
-        }
-
-        $withdrawal_data = array();
-        foreach ($selected_items as $id_order_detail) {
-            $id_order_detail = (int)$id_order_detail;
-            $quantity = isset($quantities[$id_order_detail]) ? (int)$quantities[$id_order_detail] : 0;
-
-            if ($quantity <= 0) continue;
-
-            $order_detail = new OrderDetail($id_order_detail);
-            if (Validate::isLoadedObject($order_detail) && $order_detail->id_order == $order->id) {
-                // Check if product is eligible
-                $is_virtual = isset($virtual_statuses[$order_detail->product_id]) ? $virtual_statuses[$order_detail->product_id] : false;
-                $has_customization = (int)$order_detail->customization_quantity > 0;
-
-                if ($is_virtual || $has_customization) {
-                    $this->errors[] = sprintf($this->module->l('Product %s is not eligible for withdrawal.'), $order_detail->product_name);
-                    return;
-                }
-
-                if ($quantity > $order_detail->product_quantity) {
-                    $this->errors[] = sprintf($this->module->l('Invalid quantity for product %s.'), $order_detail->product_name);
-                    return;
-                }
-                $withdrawal_data[] = array(
-                    'id_order_detail' => $id_order_detail,
-                    'product_name' => $order_detail->product_name,
-                    'quantity' => $quantity
-                );
-            }
-        }
-
-        if (empty($withdrawal_data)) {
-            $this->errors[] = $this->module->l('No valid items selected.');
-            return;
-        }
-
-        $ip_address = Tools::getRemoteAddr();
-        $user_agent = $_SERVER['HTTP_USER_AGENT'];
-        $date_now = date('Y-m-d H:i:s');
-
-        include_once(_PS_MODULE_DIR_ . 'euwithdrawalbutton/classes/EuWithdrawalRequest.php');
-        $request = new EuWithdrawalRequest();
-        $request->id_order = (int)$order->id;
-        $request->id_customer = (int)$order->id_customer;
-        $request->items_data = json_encode($withdrawal_data);
-        $request->ip_address = $ip_address;
-        $request->user_agent = $user_agent;
-        $request->date_add = $date_now;
-
-        if ($request->add()) {
-            $new_state_id = (int)Configuration::get('EU_WITHDRAWAL_STATE_ID');
-            if ($new_state_id) {
-                $history = new OrderHistory();
-                $history->id_order = (int)$order->id;
-                $history->changeIdOrderState($new_state_id, (int)$order->id);
-                $history->addWithemail(true);
-            }
-
-            $this->sendWithdrawalConfirmation($order, $request);
-            $this->success[] = $this->module->l('Your withdrawal request has been submitted successfully.');
-        } else {
-            $this->errors[] = $this->module->l('An error occurred while saving your request.');
-        }
-    }
-
-    protected function sendWithdrawalConfirmation($order, $request)
-    {
-        $customer = new Customer((int)$order->id_customer);
-        $withdrawal_data = json_decode($request->items_data, true);
-
         $items_html = '<ul>';
-        foreach ($withdrawal_data as $item) {
-            $items_html .= '<li>' . $item['product_name'] . ' (x' . $item['quantity'] . ')</li>';
+        if ($request->request_type === 'entire_order') {
+            $items_html .= '<li>' . $this->module->l('Entire Order') . '</li>';
+        } else {
+            $withdrawal_data = json_decode($request->items_data, true);
+            foreach ($withdrawal_data as $item) {
+                $items_html .= '<li>' . $item['product_name'] . ' (#' . $item['product_number'] . ') x' . $item['quantity'] . '</li>';
+            }
         }
         $items_html .= '</ul>';
 
         $template_vars = [
-            '{firstname}' => $customer->firstname,
-            '{lastname}' => $customer->lastname,
-            '{order_reference}' => $order->reference,
+            '{customer_name}' => $request->customer_name,
+            '{order_reference}' => $request->order_reference,
+            '{email}' => $request->email,
+            '{request_type}' => ($request->request_type === 'entire_order' ? 'Entire Order' : 'Partial (Line Items)'),
             '{date}' => $request->date_add,
             '{ip_address}' => $request->ip_address,
             '{user_agent}' => $request->user_agent,
             '{items}' => $items_html,
         ];
 
-        // Generate PDF using PrestaShop's PDF class
+        // Generate PDF
         include_once(_PS_MODULE_DIR_ . 'euwithdrawalbutton/classes/HTMLTemplateWithdrawalReceipt.php');
-        $pdf = new PDF($request, 'WithdrawalReceipt', Context::getContext()->smarty);
-        $pdf_content = $pdf->render(false);
-
-        $file_attachment = [
+        $pdf_obj = new PDF($request, 'WithdrawalReceipt', Context::getContext()->smarty);
+        $pdf_content = $pdf_obj->render(false);
+        $file_attachment = array(
             'content' => $pdf_content,
-            'name' => 'withdrawal_receipt_' . $order->reference . '.pdf',
+            'name' => 'withdrawal_receipt_' . $request->order_reference . '.pdf',
             'mime' => 'application/pdf',
-        ];
+        );
 
+        // Send to Customer
         Mail::Send(
-            (int)$order->id_lang,
+            (int)$this->context->language->id,
             'withdrawal_conf',
-            Mail::l('Withdrawal Request Acknowledgment', (int)$order->id_lang),
+            Mail::l('Withdrawal Request Acknowledgment', (int)$this->context->language->id),
             $template_vars,
-            $customer->email,
-            $customer->firstname . ' ' . $customer->lastname,
+            $request->email,
+            $request->customer_name,
+            null,
+            null,
+            $file_attachment,
+            null,
+            _PS_MODULE_DIR_ . 'euwithdrawalbutton/mails/'
+        );
+
+        // Send to Admin
+        Mail::Send(
+            (int)$this->context->language->id,
+            'withdrawal_admin',
+            Mail::l('New Withdrawal Request Received', (int)$this->context->language->id),
+            $template_vars,
+            Configuration::get('PS_SHOP_EMAIL'),
+            null,
             null,
             null,
             $file_attachment,

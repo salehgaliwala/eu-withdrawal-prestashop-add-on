@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 if (!defined("_PS_VERSION_")) { exit; }
 /**
  * 2024 PrestaShop
@@ -42,10 +43,6 @@ class AdminEuWithdrawalRequestsController extends ModuleAdminController
 
         parent::__construct();
 
-        $this->_select = 'o.reference as order_reference, CONCAT(c.firstname, " ", c.lastname) as customer_name';
-        $this->_join = 'LEFT JOIN `' . _DB_PREFIX_ . 'orders` o ON (o.`id_order` = a.`id_order`)
-                        LEFT JOIN `' . _DB_PREFIX_ . 'customer` c ON (c.`id_customer` = a.`id_customer`)';
-
         $this->fields_list = array(
             'id_euwithdrawal_request' => array(
                 'title' => $this->l('ID'),
@@ -55,23 +52,24 @@ class AdminEuWithdrawalRequestsController extends ModuleAdminController
             'order_reference' => array(
                 'title' => $this->l('Order Reference'),
                 'width' => 100,
-                'filter_key' => 'o!reference'
             ),
             'customer_name' => array(
                 'title' => $this->l('Customer'),
                 'width' => 150,
-                'filter_key' => 'customer_name',
-                'havingFilter' => true,
+            ),
+            'email' => array(
+                'title' => $this->l('Email'),
+                'width' => 150,
+            ),
+            'request_type' => array(
+                'title' => $this->l('Type'),
+                'width' => 100,
             ),
             'date_add' => array(
                 'title' => $this->l('Date'),
                 'type' => 'datetime',
                 'width' => 150
             ),
-            'ip_address' => array(
-                'title' => $this->l('IP Address'),
-                'width' => 100
-            )
         );
 
         $this->addRowAction('view');
@@ -87,14 +85,10 @@ class AdminEuWithdrawalRequestsController extends ModuleAdminController
             return parent::renderView();
         }
 
-        $order = new Order((int)$request->id_order);
-        $customer = new Customer((int)$request->id_customer);
         $items = json_decode($request->items_data, true);
 
         $this->tpl_view_vars = array(
             'request' => $request,
-            'order' => $order,
-            'customer' => $customer,
             'items' => $items,
         );
 

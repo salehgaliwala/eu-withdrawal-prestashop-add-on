@@ -4,17 +4,9 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 	<title>Message from {shop_name}</title>
-	<style> @media only screen and (max-width: 300px){ body { width:218px !important; margin:auto !important; } .table {width:195px !important; margin:auto !important; } .logo, .title_block{ width:100% !important; } } @media only screen and (max-width: 440px){ body { width:308px !important; margin:auto !important; } .table {width:285px !important; margin:auto !important; } .logo, .title_block{ width:100% !important; } } @media only screen and (max-width: 640px) { body { width:502px !important; margin:auto !important; } .table {width:475px !important; margin:auto !important; } .logo, .title_block{ width:100% !important; } } </style>
 </head>
 <body style="-webkit-text-size-adjust:none;background-color:#fff;width:650px;font-family:Open-sans, sans-serif;color:#555454;font-size:13px;line-height:18px;margin:auto">
 	<table class="table table-recap" bgcolor="#ffffff" style="width:100%;border-collapse:collapse;border-spacing:0;font-family:Open-sans, sans-serif;color:#555454;font-size:13px;line-height:18px;margin:auto">
-		<tr>
-			<td class="logo" style="width:100%;padding:10px 0;text-align:center">
-				<a title="{shop_name}" href="{shop_url}" style="color:#337ff1">
-					<img src="{shop_logo}" alt="{shop_name}" />
-				</a>
-			</td>
-		</tr>
 		<tr>
 			<td class="title_block" style="padding:15px 0;text-align:center;font-size:24px;color:#333;line-height:28px;text-transform:uppercase;font-weight:bold">
 				Withdrawal Request Received
@@ -22,13 +14,14 @@
 		</tr>
 		<tr>
 			<td class="space_footer" style="padding:15px 0">
-				Hi {firstname} {lastname},<br /><br />
+				Hi {customer_name},<br /><br />
 				We have received your withdrawal request for order <strong>#{order_reference}</strong>.<br /><br />
 				<strong>Request Details:</strong><br />
 				Date/Time: {date}<br />
+				Request Type: {request_type}<br />
 				IP Address: {ip_address}<br />
 				User Agent: {user_agent}<br /><br />
-				<strong>Withdrawn Items:</strong><br />
+				<strong>Items:</strong><br />
 				{items}<br /><br />
 				Please find attached the receipt for your request.<br /><br />
 				Regards,<br />
