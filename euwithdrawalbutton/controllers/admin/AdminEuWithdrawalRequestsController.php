@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 if (!defined("_PS_VERSION_")) { exit; }
 /**
  * 2024 PrestaShop
@@ -127,28 +128,9 @@ class AdminEuWithdrawalRequestsController extends ModuleAdminController
             die('Request not found');
         }
 
-        $order = new Order((int)$request->id_order);
-        $items = json_decode($request->items_data, true);
-
-        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-        $pdf->SetCreator(PDF_CREATOR);
-        $pdf->SetTitle('Withdrawal Receipt - ' . $order->reference);
-        $pdf->AddPage();
-
-        $html = '<h1>Withdrawal Request Receipt</h1>';
-        $html .= '<p><strong>Order Reference:</strong> ' . $order->reference . '</p>';
-        $html .= '<p><strong>Date/Time:</strong> ' . $request->date_add . '</p>';
-        $html .= '<p><strong>IP Address:</strong> ' . $request->ip_address . '</p>';
-        $html .= '<p><strong>User Agent:</strong> ' . $request->user_agent . '</p>';
-        $html .= '<h2>Items Selected for Withdrawal:</h2>';
-        $html .= '<table border="1" cellpadding="5"><thead><tr><th>Product Name</th><th>Quantity</th></tr></thead><tbody>';
-        foreach ($items as $item) {
-            $html .= '<tr><td>' . $item['product_name'] . '</td><td>' . $item['quantity'] . '</td></tr>';
-        }
-        $html .= '</tbody></table>';
-
-        $pdf->writeHTML($html, true, false, true, false, '');
-        $pdf->Output('withdrawal_receipt_' . $order->reference . '.pdf', 'D');
+        include_once(_PS_MODULE_DIR_ . 'euwithdrawalbutton/classes/HTMLTemplateWithdrawalReceipt.php');
+        $pdf = new PDF($request, 'WithdrawalReceipt', Context::getContext()->smarty);
+        $pdf->render();
         exit;
     }
 }

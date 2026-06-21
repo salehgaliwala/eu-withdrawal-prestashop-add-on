@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * 2024 PrestaShop
  *
@@ -46,9 +48,9 @@ class EuWithdrawalRequest extends ObjectModel
         'fields' => array(
             'id_order' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
             'id_customer' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
-            'items_data' => array('type' => self::TYPE_HTML, 'validate' => 'isAnything', 'required' => true),
-            'ip_address' => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'size' => 255),
-            'user_agent' => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'size' => 255),
+            'items_data' => array('type' => self::TYPE_STRING, 'required' => true),
+            'ip_address' => array('type' => self::TYPE_STRING, 'size' => 255),
+            'user_agent' => array('type' => self::TYPE_STRING, 'size' => 1024),
             'date_add' => array('type' => self::TYPE_DATE, 'validate' => 'isDate'),
         ),
     );

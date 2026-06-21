@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 if (!defined("_PS_VERSION_")) { exit; }
 /**
  * 2024 PrestaShop
@@ -33,7 +34,7 @@ $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'euwithdrawal_requests` 
     `id_customer` int(11) NOT NULL,
     `items_data` text NOT NULL,
     `ip_address` varchar(255) NOT NULL,
-    `user_agent` varchar(255) NOT NULL,
+    `user_agent` varchar(1024) NOT NULL,
     `date_add` datetime NOT NULL,
     PRIMARY KEY  (`id_euwithdrawal_request`)
 ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';

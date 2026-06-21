@@ -2,7 +2,11 @@
 
 {block name='page_content'}
     <div class="euwithdrawalbutton-form">
-        <h2>{l s='Withdrawal Request for Order #%s' sprintf=[$order->reference] mod='euwithdrawalbutton'}</h2>
+        {if isset($order)}
+            <h2>{l s='Withdrawal Request for Order #%s' sprintf=[$order->reference] mod='euwithdrawalbutton'}</h2>
+        {else}
+            <h2>{l s='Withdrawal Request / Order Lookup' mod='euwithdrawalbutton'}</h2>
+        {/if}
 
         {if isset($errors) && $errors}
             <div class="alert alert-danger">
@@ -22,8 +26,11 @@
                     {endforeach}
                 </ul>
             </div>
-        {else}
+        {elseif isset($order)}
             <form action="{$action_url|escape:'html':'UTF-8'}" method="post">
+                <input type="hidden" name="id_order" value="{$id_order|intval}">
+                <input type="hidden" name="secure_key" value="{$secure_key|escape:'htmlall':'UTF-8'}">
+
                 <table class="table table-bordered">
                     <thead>
                         <tr>
@@ -60,6 +67,27 @@
                 <div class="footer">
                     <button type="submit" name="submitWithdrawal" class="btn btn-primary">
                         {l s='Submit Withdrawal Request' mod='euwithdrawalbutton'}
+                    </button>
+                </div>
+            </form>
+        {else}
+            <form action="{$lookup_action|escape:'html':'UTF-8'}" method="post" class="box">
+                <p>{l s='To request a withdrawal, please identify your order.' mod='euwithdrawalbutton'}</p>
+                <div class="form-group row">
+                    <label class="col-md-3 form-control-label">{l s='Order Reference' mod='euwithdrawalbutton'}</label>
+                    <div class="col-md-6">
+                        <input type="text" name="order_reference" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-md-3 form-control-label">{l s='Email Address' mod='euwithdrawalbutton'}</label>
+                    <div class="col-md-6">
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                </div>
+                <div class="footer text-sm-center">
+                    <button type="submit" name="submitLookup" class="btn btn-primary">
+                        {l s='Lookup Order' mod='euwithdrawalbutton'}
                     </button>
                 </div>
             </form>
