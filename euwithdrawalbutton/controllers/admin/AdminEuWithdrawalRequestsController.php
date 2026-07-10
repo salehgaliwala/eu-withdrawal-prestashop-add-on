@@ -1,7 +1,4 @@
 <?php
-declare(strict_types=1);
-
-if (!defined("_PS_VERSION_")) { exit; }
 /**
  * 2024 PrestaShop
  *
@@ -27,6 +24,8 @@ if (!defined("_PS_VERSION_")) { exit; }
  *  International Registered Trademark & Property of PrestaShop SA
  */
 
+if (!defined("_PS_VERSION_")) { exit; }
+
 include_once(_PS_MODULE_DIR_ . 'euwithdrawalbutton/classes/EuWithdrawalRequest.php');
 
 class AdminEuWithdrawalRequestsController extends ModuleAdminController
@@ -45,28 +44,28 @@ class AdminEuWithdrawalRequestsController extends ModuleAdminController
 
         $this->fields_list = array(
             'id_euwithdrawal_request' => array(
-                'title' => $this->l('ID'),
+                'title' => $this->l('ID', 'AdminEuWithdrawalRequestsController'),
                 'align' => 'center',
                 'width' => 25
             ),
             'order_reference' => array(
-                'title' => $this->l('Order Reference'),
+                'title' => $this->l('Order Reference', 'AdminEuWithdrawalRequestsController'),
                 'width' => 100,
             ),
             'customer_name' => array(
-                'title' => $this->l('Customer'),
+                'title' => $this->l('Customer', 'AdminEuWithdrawalRequestsController'),
                 'width' => 150,
             ),
             'email' => array(
-                'title' => $this->l('Email'),
+                'title' => $this->l('Email', 'AdminEuWithdrawalRequestsController'),
                 'width' => 150,
             ),
             'request_type' => array(
-                'title' => $this->l('Type'),
+                'title' => $this->l('Type', 'AdminEuWithdrawalRequestsController'),
                 'width' => 100,
             ),
             'date_add' => array(
-                'title' => $this->l('Date'),
+                'title' => $this->l('Date', 'AdminEuWithdrawalRequestsController'),
                 'type' => 'datetime',
                 'width' => 150
             ),
@@ -99,7 +98,7 @@ class AdminEuWithdrawalRequestsController extends ModuleAdminController
     {
         $this->context->smarty->assign(array(
             'href' => self::$currentIndex . '&' . $this->identifier . '=' . $id . '&exportpdf' . $this->table . '&token=' . ($token ?: $this->token),
-            'action' => $this->l('Export PDF'),
+            'action' => $this->l('Export PDF', 'AdminEuWithdrawalRequestsController'),
         ));
 
         return $this->context->smarty->fetch('helpers/list/list_action_default.tpl');

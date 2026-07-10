@@ -60,7 +60,7 @@
             <thead>
                 <tr>
                     <th>{l s='Product Name' mod='euwithdrawalbutton'}</th>
-                    <th>{l s='Product Number' mod='euwithdrawalbutton'}</th>
+                    <th>{l s='Product Reference' mod='euwithdrawalbutton'}</th>
                     <th>{l s='Quantity' mod='euwithdrawalbutton'}</th>
                 </tr>
             </thead>
@@ -68,7 +68,7 @@
                 {foreach from=$items item=item}
                     <tr>
                         <td>{$item.product_name|escape:'htmlall':'UTF-8'}</td>
-                        <td>{$item.product_number|escape:'htmlall':'UTF-8'}</td>
+                        <td>{$item.product_reference|escape:'htmlall':'UTF-8'}</td>
                         <td>{$item.quantity|intval}</td>
                     </tr>
                 {/foreach}

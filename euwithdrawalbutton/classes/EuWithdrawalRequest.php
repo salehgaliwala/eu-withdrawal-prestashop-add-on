@@ -27,14 +27,14 @@ class EuWithdrawalRequest extends ObjectModel
         'fields' => array(
             'id_order' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId'),
             'id_customer' => array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId'),
-            'customer_name' => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'required' => true, 'size' => 255),
-            'order_reference' => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'required' => true, 'size' => 64),
+            'customer_name' => array('type' => self::TYPE_STRING, 'validate' => 'isGenericName', 'required' => true, 'size' => 255),
+            'order_reference' => array('type' => self::TYPE_STRING, 'validate' => 'isReference', 'required' => true, 'size' => 64),
             'email' => array('type' => self::TYPE_STRING, 'validate' => 'isEmail', 'required' => true, 'size' => 255),
-            'request_type' => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'required' => true, 'size' => 32),
+            'request_type' => array('type' => self::TYPE_STRING, 'required' => true, 'size' => 32),
             'items_data' => array('type' => self::TYPE_STRING, 'required' => true),
             'ip_address' => array('type' => self::TYPE_STRING, 'size' => 255),
             'user_agent' => array('type' => self::TYPE_STRING, 'size' => 1024),
-            'date_add' => array('type' => self::TYPE_DATE, 'validate' => 'isDate'),
+            'date_add' => array('type' => self::TYPE_DATE, 'validate' => 'isDateFormat'),
         ),
     );
 }
