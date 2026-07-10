@@ -110,7 +110,7 @@ class EuWithdrawalButtonRequestModuleFrontController extends ModuleFrontControll
 
         foreach ($products as $product) {
             $is_virtual = isset($virtual_statuses[$product['product_id']]) ? $virtual_statuses[$product['product_id']] : false;
-            $has_customization = (int)$product['customization_quantity'] > 0;
+            $has_customization = isset($product['customization_quantity']) && (int)$product['customization_quantity'] > 0;
 
             if (!$is_virtual && !$has_customization) {
                 $eligible_products[] = $product;
