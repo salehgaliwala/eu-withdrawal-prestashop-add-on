@@ -34,14 +34,19 @@ class HTMLTemplateWithdrawalReceipt extends HTMLTemplate
 
     public function getLogo()
     {
-        $logo = Configuration::get('PS_LOGO');
-        if ($logo && file_exists($logo)) {
-            return $logo;
+        // Get the logo filename only (e.g., "logo.png")
+        $logo_filename = Configuration::get('PS_LOGO');
+        
+        // Combine with the directory constant
+        $logo_path = $logo_filename;
+        
+        // Ensure the file exists before returning the path
+        if (file_exists($logo_path)) {
+            return $logo_path;
         }
-        if ($logo && file_exists(_PS_IMG_DIR_ . $logo)) {
-            return _PS_IMG_DIR_ . $logo;
-        }
-        return parent::getLogo();
+        
+        // Return an empty string if the file is missing to prevent the warning
+        return '';
     }
 
     public function getFilename()
