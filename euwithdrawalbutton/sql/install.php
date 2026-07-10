@@ -40,6 +40,7 @@ $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'euwithdrawal_requests` 
     `items_data` text NOT NULL,
     `ip_address` varchar(255) NOT NULL,
     `user_agent` varchar(1024) NOT NULL,
+    `status` varchar(32) NOT NULL DEFAULT "pending",
     `date_add` datetime NOT NULL,
     PRIMARY KEY  (`id_euwithdrawal_request`)
 ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
@@ -48,4 +49,10 @@ foreach ($sql as $query) {
     if (Db::getInstance()->execute($query) == false) {
         return false;
     }
+}
+
+// Check if the 'status' column exists in case the table was created previously without it
+$columns = Db::getInstance()->executeS('SHOW COLUMNS FROM `' . _DB_PREFIX_ . 'euwithdrawal_requests` LIKE "status"');
+if (empty($columns)) {
+    Db::getInstance()->execute('ALTER TABLE `' . _DB_PREFIX_ . 'euwithdrawal_requests` ADD `status` VARCHAR(32) NOT NULL DEFAULT "pending" AFTER `user_agent`');
 }

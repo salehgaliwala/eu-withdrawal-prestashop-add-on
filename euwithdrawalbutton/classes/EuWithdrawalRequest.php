@@ -41,7 +41,16 @@ class EuWithdrawalRequest extends ObjectModel
     public $items_data;
     public $ip_address;
     public $user_agent;
+    public $status;
     public $date_add;
+
+    public function __construct($id = null, $id_lang = null, $id_shop = null)
+    {
+        parent::__construct($id, $id_lang, $id_shop);
+        if (!$this->id) {
+            $this->status = 'pending';
+        }
+    }
 
     /**
      * @see ObjectModel::$definition
@@ -59,6 +68,7 @@ class EuWithdrawalRequest extends ObjectModel
             'items_data' => array('type' => self::TYPE_STRING, 'required' => true),
             'ip_address' => array('type' => self::TYPE_STRING, 'size' => 255),
             'user_agent' => array('type' => self::TYPE_STRING, 'size' => 1024),
+            'status' => array('type' => self::TYPE_STRING, 'validate' => 'isGenericName', 'size' => 32),
             'date_add' => array('type' => self::TYPE_DATE, 'validate' => 'isDateFormat'),
         ),
     );

@@ -8,6 +8,15 @@
                 <div class="col-md-6">
                     <p><strong>{l s='Customer Name:' mod='euwithdrawalbutton'}</strong> {$withdrawal_request.customer_name|escape:'html':'UTF-8'}</p>
                     <p><strong>{l s='Email Address:' mod='euwithdrawalbutton'}</strong> {$withdrawal_request.email|escape:'html':'UTF-8'}</p>
+                    <p><strong>{l s='Status:' mod='euwithdrawalbutton'}</strong>
+                        {if isset($withdrawal_request.status) && $withdrawal_request.status == 'accepted'}
+                            <span class="badge badge-success label label-success">{l s='Accepted' mod='euwithdrawalbutton'}</span>
+                        {elseif isset($withdrawal_request.status) && $withdrawal_request.status == 'rejected'}
+                            <span class="badge badge-danger label label-danger">{l s='Rejected' mod='euwithdrawalbutton'}</span>
+                        {else}
+                            <span class="badge badge-warning label label-warning">{l s='Pending' mod='euwithdrawalbutton'}</span>
+                        {/if}
+                    </p>
                 </div>
                 <div class="col-md-6">
                     <p><strong>{l s='Request Type:' mod='euwithdrawalbutton'}</strong> {$withdrawal_request.request_type|escape:'html':'UTF-8'}</p>

@@ -241,6 +241,7 @@ class EuWithdrawalButtonRequestModuleFrontController extends ModuleFrontControll
         $request->items_data = json_encode($withdrawal_data);
         $request->ip_address = Tools::getRemoteAddr();
         $request->user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        $request->status = 'pending';
         $request->date_add = date('Y-m-d H:i:s');
 
         if ($request->add()) {
