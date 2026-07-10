@@ -60,14 +60,18 @@ class EuWithdrawalButton extends Module
             return false;
         }
 
-        require_once($this->local_path . 'sql/install.php');
+        if (!include($this->local_path . 'sql/install.php')) {
+            return false;
+        }
 
         return parent::install() &&
             $this->createOrderStatus() &&
             $this->installTab() &&
             $this->registerHook('displayCustomerAccount') &&
             $this->registerHook('displayOrderDetail') &&
-            $this->registerHook('displayFooter');
+            $this->registerHook('displayFooter') &&
+            $this->registerHook('displayAdminOrderTabLink') &&    // Hook for the Tab Link
+            $this->registerHook('displayAdminOrderTabContent');   // Hook for the Tab Content
     }
 
     public function uninstall()
@@ -115,20 +119,24 @@ class EuWithdrawalButton extends Module
         return false;
     }
 
-    protected function installTab()
+    public function installTab()
     {
         $tab = new Tab();
+        $tab->active = 1;
         $tab->class_name = 'AdminEuWithdrawalRequests';
-        $tab->id_parent = (int)Tab::getIdFromClassName('AdminOrders');
-        $tab->module = $this->name;
-
-        foreach (Language::getLanguages() as $lang) {
+        
+        $tab->name = array();
+        foreach (Language::getLanguages(true) as $lang) {
             $tab->name[$lang['id_lang']] = $this->l('Withdrawal Requests');
         }
-
+        
+        // This attaches the menu link to the "Customer Service" parent category
+        $tab->id_parent = (int) Tab::getIdFromClassName('AdminParentCustomerThreads'); 
+        
+        $tab->module = $this->name;
+        
         return $tab->add();
     }
-
     protected function uninstallTab()
     {
         $id_tab = (int)Tab::getIdFromClassName('AdminEuWithdrawalRequests');
@@ -170,5 +178,37 @@ class EuWithdrawalButton extends Module
         ]);
 
         return $this->display(__FILE__, 'views/templates/hook/displayFooter.tpl');
+    }
+
+    public function hookDisplayAdminOrderTabLink($params)
+    {
+        $id_order = (int)$params['id_order'];
+        $sql = 'SELECT id_euwithdrawal_request FROM ' . _DB_PREFIX_ . 'euwithdrawal_requests WHERE id_order = ' . (int)$id_order;
+        
+        // If a request exists, show the tab link
+        if (Db::getInstance()->getValue($sql)) {
+            return '<li class="nav-item">
+                        <a href="#euwithdrawal-tab" class="nav-link" data-toggle="tab" role="tab">
+                            <i class="material-icons">assignment_return</i> ' . $this->l('Withdrawal Request') . '
+                        </a>
+                    </li>';
+        }
+        return '';
+    }
+
+    public function hookDisplayAdminOrderTabContent($params)
+    {
+        $id_order = (int)$params['id_order'];
+        $sql = 'SELECT * FROM ' . _DB_PREFIX_ . 'euwithdrawal_requests WHERE id_order = ' . (int)$id_order;
+        $request = Db::getInstance()->getRow($sql);
+
+        // If a request exists, load the smarty template with the data
+        if ($request) {
+            $this->context->smarty->assign(array(
+                'withdrawal_request' => $request,
+            ));
+            return $this->display(__FILE__, 'views/templates/admin/order_tab_content.tpl');
+        }
+        return '';
     }
 }

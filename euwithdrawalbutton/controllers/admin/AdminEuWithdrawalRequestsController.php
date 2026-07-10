@@ -43,36 +43,50 @@ class AdminEuWithdrawalRequestsController extends ModuleAdminController
         parent::__construct();
 
         $this->fields_list = array(
-            'id_euwithdrawal_request' => array(
-                'title' => $this->l('ID', 'AdminEuWithdrawalRequestsController'),
-                'align' => 'center',
-                'width' => 25
-            ),
-            'order_reference' => array(
-                'title' => $this->l('Order Reference', 'AdminEuWithdrawalRequestsController'),
-                'width' => 100,
-            ),
-            'customer_name' => array(
-                'title' => $this->l('Customer', 'AdminEuWithdrawalRequestsController'),
-                'width' => 150,
-            ),
-            'email' => array(
-                'title' => $this->l('Email', 'AdminEuWithdrawalRequestsController'),
-                'width' => 150,
-            ),
-            'request_type' => array(
-                'title' => $this->l('Type', 'AdminEuWithdrawalRequestsController'),
-                'width' => 100,
-            ),
-            'date_add' => array(
-                'title' => $this->l('Date', 'AdminEuWithdrawalRequestsController'),
-                'type' => 'datetime',
-                'width' => 150
-            ),
-        );
+    'id_euwithdrawal_request' => array(
+        'title' => $this->module->l('ID'),
+        'align' => 'center',
+        'width' => 25
+    ),
+    'order_reference' => array(
+        'title' => $this->module->l('Order Reference'),
+        'width' => 100,
+    ),
+    'customer_name' => array(
+        'title' => $this->module->l('Customer'),
+        'width' => 150,
+    ),
+    'email' => array(
+        'title' => $this->module->l('Email'),
+        'width' => 150,
+    ),
+    'request_type' => array(
+        'title' => $this->module->l('Type'),
+        'width' => 100,
+    ),
+    'date_add' => array(
+        'title' => $this->module->l('Date'),
+        'type' => 'datetime',
+        'width' => 150
+    ),
+);
 
         $this->addRowAction('view');
         $this->addRowAction('exportpdf');
+    }
+
+    public function initToolbar()
+    {
+        parent::initToolbar();
+        // Removes the "Add new" button in older PrestaShop themes
+        unset($this->toolbar_btn['new']);
+    }
+
+    public function initPageHeaderToolbar()
+    {
+        parent::initPageHeaderToolbar();
+        // Removes the "Add new" button in PrestaShop 1.7/8+
+        unset($this->page_header_toolbar_btn['new']);
     }
 
     public function renderView()
@@ -98,7 +112,7 @@ class AdminEuWithdrawalRequestsController extends ModuleAdminController
     {
         $this->context->smarty->assign(array(
             'href' => self::$currentIndex . '&' . $this->identifier . '=' . (int)$id . '&exportpdf' . $this->table . '&token=' . ($token ?: $this->token),
-            'action' => $this->l('Export PDF', 'AdminEuWithdrawalRequestsController'),
+            'action' => $this->module->l('Export PDF', 'AdminEuWithdrawalRequestsController'),
         ));
 
         return $this->context->smarty->fetch('helpers/list/list_action_default.tpl');

@@ -9,7 +9,7 @@
                 <ul>
                     {foreach from=$errors item=error}
                         <li>{$error|escape:'htmlall':'UTF-8'}</li>
-                    {endforeach}
+                    {/foreach}
                 </ul>
             </div>
         {/if}
@@ -19,7 +19,7 @@
                 <ul>
                     {foreach from=$success item=s}
                         <li>{$s|escape:'htmlall':'UTF-8'}</li>
-                    {endforeach}
+                    {/foreach}
                 </ul>
             </div>
         {else}

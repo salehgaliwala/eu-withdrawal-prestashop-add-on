@@ -56,13 +56,31 @@ class EuWithdrawalButtonRequestModuleFrontController extends ModuleFrontControll
             $products = $this->getEligibleProducts($order);
         }
 
+        // Default to empty strings
+        $customer_name = '';
+        $customer_email = '';
+
+        // If the order is valid, pull the details directly from the order's owner
+        if ($is_valid_order && Validate::isLoadedObject($order)) {
+            $customer = new Customer($order->id_customer);
+            if (Validate::isLoadedObject($customer)) {
+                $customer_name = $customer->firstname . ' ' . $customer->lastname;
+                $customer_email = $customer->email;
+            }
+        } 
+        // Fallback for logged-in users who haven't loaded an order yet
+        elseif (isset($this->context->customer->id) && $this->context->customer->id) {
+            $customer_name = $this->context->customer->firstname . ' ' . $this->context->customer->lastname;
+            $customer_email = $this->context->customer->email;
+        }
+
         $this->context->smarty->assign([
             'action_url' => $this->context->link->getModuleLink('euwithdrawalbutton', 'request'),
             'is_valid_order' => $is_valid_order,
             'order' => $order,
             'products' => $products,
-            'customer_name' => $this->context->customer->id ? $this->context->customer->firstname . ' ' . $this->context->customer->lastname : '',
-            'email' => $this->context->customer->id ? $this->context->customer->email : '',
+            'customer_name' => $customer_name,
+            'email' => $customer_email,
         ]);
 
         $this->setTemplate('module:euwithdrawalbutton/views/templates/front/request.tpl');
@@ -124,7 +142,7 @@ class EuWithdrawalButtonRequestModuleFrontController extends ModuleFrontControll
             SELECT o.id_order
             FROM ' . _DB_PREFIX_ . 'orders o
             LEFT JOIN ' . _DB_PREFIX_ . 'customer c ON o.id_customer = c.id_customer
-            WHERE o.reference = "' . pSQL($reference) . '" AND (c.email = "' . pSQL($email) . '" OR o.email = "' . pSQL($email) . '")'
+            WHERE o.reference = "' . pSQL($reference) . '" AND c.email = "' . pSQL($email) . '"'
         );
 
         if ($id_order) {
