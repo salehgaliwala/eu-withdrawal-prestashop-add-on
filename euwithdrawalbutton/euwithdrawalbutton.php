@@ -56,7 +56,11 @@ class EuWithdrawalButton extends Module
 
     public function install()
     {
-        include_once($this->local_path . 'sql/install.php');
+        if (!file_exists($this->local_path . 'sql/install.php')) {
+            return false;
+        }
+
+        require_once($this->local_path . 'sql/install.php');
 
         return parent::install() &&
             $this->createOrderStatus() &&
