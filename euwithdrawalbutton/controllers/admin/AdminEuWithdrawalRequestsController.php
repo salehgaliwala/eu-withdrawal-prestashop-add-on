@@ -97,7 +97,7 @@ class AdminEuWithdrawalRequestsController extends ModuleAdminController
     public function displayExportpdfLink($token = null, $id = null, $name = null)
     {
         $this->context->smarty->assign(array(
-            'href' => self::$currentIndex . '&' . $this->identifier . '=' . $id . '&exportpdf' . $this->table . '&token=' . ($token ?: $this->token),
+            'href' => self::$currentIndex . '&' . $this->identifier . '=' . (int)$id . '&exportpdf' . $this->table . '&token=' . ($token ?: $this->token),
             'action' => $this->l('Export PDF', 'AdminEuWithdrawalRequestsController'),
         ));
 
